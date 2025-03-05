@@ -8,14 +8,20 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var appState = AppStateManager()
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        NavigationStack {
+            if !appState.isInitialized {
+                SplashScreen()
+            } else {
+                if appState.isAuthenticated {
+                    FacultyHomeScreen()
+                } else {
+                    LoginScreen()
+                }
+            }
         }
-        .padding()
     }
 }
 

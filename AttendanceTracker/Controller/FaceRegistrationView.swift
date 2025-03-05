@@ -6,50 +6,46 @@
 //
 
 import SwiftUI
-import PhotosUI
 
 struct FaceRegistrationView: View {
-    @State private var selectedPhoto: UIImage?
     @State private var studentID: String = ""
-
+    @State private var selectedImage: UIImage?
+    @State private var isImagePickerPresented = false
+    
     var body: some View {
         VStack {
             TextField("Enter Student ID", text: $studentID)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
 
-            if let selectedPhoto = selectedPhoto {
-                Image(uiImage: selectedPhoto)
+            Button("Pick Image") {
+                isImagePickerPresented.toggle()
+            }
+            .padding()
+            
+            if let image = selectedImage {
+                Image(uiImage: image)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 200, height: 200)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Color.blue, lineWidth: 3))
+                    .frame(height: 200)
+                    .cornerRadius(10)
             }
 
-            PhotosPicker(selection: Binding(get: {
-                nil
-            }, set: { newItem in
-                if let data = try? newItem?.loadTransferable(type: Data.self),
-                   let image = UIImage(data: data) {
-                    selectedPhoto = image
-                }
-            })) {
-                Text("Select Face Photo")
-                    .font(.title2)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .clipShape(Capsule())
-            }
-
-            Button("Save Face") {
-                if let studentID = studentID, !studentID.isEmpty, let image = selectedPhoto {
-                    FaceRecognitionManager.shared.saveFaceImage(studentID: studentID, faceImage: image)
+            Button("Register Face") {
+                if let image = selectedImage {
+                    // Register face with FaceRecognitionManager (saves to UserDefaults)
+                    FaceRecognitionManager.shared.registerFace(studentID: studentID, image: image)
+                    
+                    // Save image to local storage using FaceStorageManager
+                    if let url = FaceStorageManager.shared.saveImageToLocal(image, studentID: studentID) {
+                        print("Image saved to: \(url)")
+                    }
                 }
             }
-            .disabled(selectedPhoto == nil || studentID.isEmpty)
             .padding()
+        }
+        .sheet(isPresented: $isImagePickerPresented) {
+            ImagePicker(selectedImage: $selectedImage)
         }
     }
 }

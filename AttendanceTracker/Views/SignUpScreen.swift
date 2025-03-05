@@ -93,14 +93,6 @@ struct SignUpScreen: View {
     }
 }
 
-// Placeholder Home Screens
-struct StudentHomeScreen: View {
-    var body: some View {
-        Text("Student Home Screen")
-            .font(.largeTitle)
-    }
-}
-
 
 struct SignUpScreen_Previews: PreviewProvider {
     static var previews: some View {

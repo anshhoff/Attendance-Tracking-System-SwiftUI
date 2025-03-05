@@ -1,3 +1,8 @@
+import AVFoundation
+import UIKit
+import Vision
+import Combine
+
 class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     let session = AVCaptureSession()
     private let output = AVCaptureVideoDataOutput()
@@ -5,23 +10,18 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
     private var backCamera: AVCaptureDevice?
     private var frontCamera: AVCaptureDevice?
     private var currentDevice: AVCaptureDevice?
+    
+    @Published var lastCapturedImage: UIImage?
+    private var faceDetectionRequest: VNDetectFaceRectanglesRequest?
+    var onFaceDetected: ((UIImage, Float, String?) -> Void)?
     private var autoCapture = false
     
-    var onFaceDetected: ((UIImage, Float, String?) -> Void)?
-    private var faceDetectionRequest: VNDetectFaceRectanglesRequest?
-    
-    // Sample student database - replace with your actual database
-    private let studentDatabase = [
-        "Student1": UIImage(named: "student1"),
-        "Student2": UIImage(named: "student2")
-    ]
-
     override init() {
         super.init()
         setupSession()
         setupFaceDetection()
     }
-
+    
     func setupSession() {
         session.beginConfiguration()
         session.sessionPreset = .high
@@ -91,8 +91,6 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
         }
     }
     
-    private var lastCapturedImage: UIImage?
-
     func startSession() {
         if !session.isRunning {
             DispatchQueue.global(qos: .background).async { self.session.startRunning() }
@@ -152,7 +150,7 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
     }
     
     func toggleAutoCapture() {
-        autoCapture.toggle()
+        autoCapture = !autoCapture
     }
     
     func captureImage(completion: @escaping (UIImage) -> Void) {
@@ -169,7 +167,11 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
         let context = CIContext()
         guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
         let uiImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: .right)
-        self.lastCapturedImage = uiImage
+        
+        // Update lastCapturedImage on the main thread
+        DispatchQueue.main.async {
+            self.lastCapturedImage = uiImage
+        }
         
         // Run face detection
         let requestHandler = VNImageRequestHandler(cvPixelBuffer: imageBuffer, orientation: .right)

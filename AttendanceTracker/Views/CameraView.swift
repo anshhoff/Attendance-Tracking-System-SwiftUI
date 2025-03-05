@@ -1,108 +1,171 @@
-//
-//  CameraView.swift
-//  AttendanceTracker
-//
-//  Created by Ansh Hardaha on 2025/02/23.
-//
-
-
 import SwiftUI
 import AVFoundation
+import Vision
 
 struct CameraView: View {
     @ObservedObject var cameraManager = CameraManager()
+    @Environment(\.presentationMode) var presentationMode
+    @State private var recognizedStudent: String? = nil
+    @State private var detectionConfidence: Float = 0.0
+    @State private var showCaptureButton = true
+    @State private var flashMode: Bool = false
     
-    var onCapture: (UIImage) -> Void
-    
+    var onImageCaptured: (UIImage) -> Void  // Closure to send image back
+    var isRegistrationMode: Bool = false  // Flag to check if in registration mode
+
     var body: some View {
         ZStack {
             CameraPreview(session: cameraManager.session)
                 .onAppear { cameraManager.startSession() }
                 .onDisappear { cameraManager.stopSession() }
-            
+                .overlay(
+                    Rectangle()
+                        .strokeBorder(Color.yellow, lineWidth: 3)
+                        .frame(width: 250, height: 300)
+                        .background(Color.clear)
+                )
+
             VStack {
+                HStack {
+                    Button(action: {
+                        flashMode.toggle()
+                        cameraManager.toggleTorch(on: flashMode)
+                    }) {
+                        Image(systemName: flashMode ? "bolt.fill" : "bolt.slash")
+                            .font(.system(size: 24))
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.black.opacity(0.6))
+                            .clipShape(Circle())
+                    }
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        cameraManager.switchCamera()
+                    }) {
+                        Image(systemName: "camera.rotate")
+                            .font(.system(size: 24))
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.black.opacity(0.6))
+                            .clipShape(Circle())
+                    }
+                }
+                .padding()
+                
                 Spacer()
-                Button(action: {
-                    cameraManager.capturePhoto { image in
-                        if let image = image {
-                            onCapture(image)
+                
+                if let student = recognizedStudent {
+                    Text("Recognized: \(student)")
+                        .font(.largeTitle)
+                        .bold()
+                        .foregroundColor(.green)
+                } else {
+                    Text("Position your face in the frame")
+                        .font(.title)
+                        .foregroundColor(.white)
+                }
+
+                HStack(spacing: 30) {
+                    Button(action: { presentationMode.wrappedValue.dismiss() }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 24))
+                            .padding()
+                            .background(Color.red)
+                            .foregroundColor(.white)
+                            .clipShape(Circle())
+                    }
+                    
+                    if showCaptureButton {
+                        Button(action: {
+                            cameraManager.captureImage { image in
+                                onImageCaptured(image)
+                                if isRegistrationMode {
+                                    presentationMode.wrappedValue.dismiss()
+                                }
+                            }
+                        }) {
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 70, height: 70)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.black.opacity(0.8), lineWidth: 2)
+                                        .frame(width: 60, height: 60)
+                                )
                         }
                     }
-                }) {
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 70, height: 70)
-                        .overlay(Circle().stroke(Color.black, lineWidth: 2))
+                    
+                    Button(action: {
+                        cameraManager.toggleAutoCapture()
+                        showCaptureButton.toggle()
+                    }) {
+                        Image(systemName: showCaptureButton ? "timer" : "hand.raised")
+                            .font(.system(size: 24))
+                            .padding()
+                            .background(showCaptureButton ? Color.blue : Color.green)
+                            .foregroundColor(.white)
+                            .clipShape(Circle())
+                    }
                 }
                 .padding(.bottom, 30)
             }
         }
         .edgesIgnoringSafeArea(.all)
-    }
-}
-
-// Camera Manager
-class CameraManager: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
-    let session = AVCaptureSession()
-    private var output = AVCapturePhotoOutput()
-    private var previewLayer: AVCaptureVideoPreviewLayer?
-    
-    override init() {
-        super.init()
-        setupSession()
-    }
-    
-    func setupSession() {
-        session.beginConfiguration()
-        if let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front),
-           let input = try? AVCaptureDeviceInput(device: device) {
-            if session.canAddInput(input) {
-                session.addInput(input)
-            }
-        }
-        
-        if session.canAddOutput(output) {
-            session.addOutput(output)
-        }
-        
-        session.commitConfiguration()
-    }
-    
-    func startSession() {
-        if !session.isRunning {
-            DispatchQueue.global(qos: .background).async {
-                self.session.startRunning()
+        .onReceive(cameraManager.$lastCapturedImage) { image in
+            if let image = image {
+                recognizeFace(image: image)
             }
         }
     }
     
-    func stopSession() {
-        if session.isRunning {
-            session.stopRunning()
-        }
-    }
-    
-    func capturePhoto(completion: @escaping (UIImage?) -> Void) {
-        let settings = AVCapturePhotoSettings()
-        output.capturePhoto(with: settings, delegate: self)
-        self.completionHandler = completion
-    }
-    
-    private var completionHandler: ((UIImage?) -> Void)?
-    
-    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-        guard let data = photo.fileDataRepresentation(), let image = UIImage(data: data) else {
-            completionHandler?(nil)
+    private func recognizeFace(image: UIImage) {
+        guard !isRegistrationMode else { return }
+        
+        guard let ciImage = CIImage(image: image) else {
+            print("❌ Could not convert to CIImage")
             return
         }
-        completionHandler?(image)
+        
+        let request = VNDetectFaceRectanglesRequest { request, error in
+            guard let results = request.results as? [VNFaceObservation], !results.isEmpty else {
+                print("❌ No faces detected in the input image")
+                return
+            }
+            
+            let recognitionTask = DispatchWorkItem {
+                FaceRecognitionManager.shared.matchFace(image: image) { studentID in
+                    DispatchQueue.main.async {
+                        if let studentID = studentID {
+                            self.recognizedStudent = studentID
+                        } else {
+                            self.recognizedStudent = nil
+                        }
+                    }
+                }
+            }
+            
+            DispatchQueue.global(qos: .userInitiated).async {
+                recognitionTask.perform()
+            }
+        }
+        
+        let handler = VNImageRequestHandler(ciImage: ciImage, options: [:])
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                try handler.perform([request])
+            } catch {
+                print("❌ Face detection error: \(error.localizedDescription)")
+            }
+        }
     }
 }
 
 // Camera Preview Layer
 struct CameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
-    
+
     func makeUIView(context: Context) -> UIView {
         let view = UIView(frame: UIScreen.main.bounds)
         let layer = AVCaptureVideoPreviewLayer(session: session)
@@ -111,6 +174,6 @@ struct CameraPreview: UIViewRepresentable {
         view.layer.addSublayer(layer)
         return view
     }
-    
+
     func updateUIView(_ uiView: UIView, context: Context) {}
 }

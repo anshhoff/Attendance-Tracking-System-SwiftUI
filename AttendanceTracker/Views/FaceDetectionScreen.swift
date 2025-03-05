@@ -1,96 +1,240 @@
-//
-//  SwiftUIView.swift
-//  AttendanceTracker
-//
-//  Created by Ansh Hardaha on 2025/02/19.
-//
-
 import SwiftUI
-import AVFoundation
 import Vision
+import UIKit
 
 struct FaceDetectionScreen: View {
-    @State private var image: UIImage? = nil
-    @State private var showImagePicker = false
-    @State private var faceDetected = ""
+    @State private var detectedStudentID: String? = nil
+    @State private var isCameraPresented = false
+    @State private var capturedImage: UIImage?
+    @State private var isProcessing = false
+    @State private var registeredFaces: [String] = []
+    @State private var showRegistrationSheet = false
+    @State private var newStudentID = ""
     
     var body: some View {
-        VStack(spacing: 20) {
-            if let image = image {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 300)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.blue, lineWidth: 2))
+        VStack(spacing: 16) {
+            Text("Face Detection")
+                .font(.title)
+                .fontWeight(.bold)
+            
+            if isProcessing {
+                ProgressView("Processing...")
+                    .padding()
+            } else {
+                if let studentID = detectedStudentID {
+                    Text(studentID)
+                        .font(.title2)
+                        .foregroundColor(studentID.contains("Not") ? .red : .green)
+                        .padding()
+                        .background(studentID.contains("Not") ? Color.red.opacity(0.2) : Color.green.opacity(0.2))
+                        .cornerRadius(8)
+                } else {
+                    Text("Ready for face detection")
+                        .font(.title2)
+                        .foregroundColor(.gray)
+                }
+                
+                if let image = capturedImage {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 200)
+                        .cornerRadius(10)
+                        .shadow(radius: 3)
+                        .padding(.vertical, 10)
+                }
             }
             
-            Text(faceDetected)
-                .foregroundColor(.red)
-                .bold()
-            
-            Button("Capture Face") {
-                showImagePicker.toggle()
+            Button("Capture & Recognize") {
+                isCameraPresented = true
             }
-            .buttonStyle(.borderedProminent)
+            .padding()
+            .background(Color.blue)
+            .foregroundColor(.white)
+            .cornerRadius(12)
+            .disabled(isProcessing)
+            
+            Button("Register New Face") {
+                showRegistrationSheet = true
+            }
+            .padding()
+            .background(Color.green)
+            .foregroundColor(.white)
+            .cornerRadius(12)
+            .disabled(isProcessing)
+            
+            // List of registered faces
+            if !registeredFaces.isEmpty {
+                VStack(alignment: .leading) {
+                    Text("Registered Faces:")
+                        .font(.headline)
+                        .padding(.top, 10)
+                    
+                    ScrollView {
+                        ForEach(registeredFaces, id: \.self) { face in
+                            HStack {
+                                Text(face)
+                                Spacer()
+                                Button(action: {
+                                    FaceRecognitionManager.shared.removeFace(studentID: face)
+                                    loadRegisteredFaces()
+                                }) {
+                                    Image(systemName: "trash")
+                                        .foregroundColor(.red)
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    }
+                    .frame(maxHeight: 150)
+                }
+                .padding()
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(8)
+            }
         }
         .padding()
-        .sheet(isPresented: $showImagePicker) {
-            ImagePicker(image: $image, onImagePicked: detectFaces)
+        .onAppear {
+            loadRegisteredFaces()
+        }
+        .sheet(isPresented: $isCameraPresented) {
+            CameraView { image in
+                capturedImage = image
+                recognizeFace()
+            }
+        }
+        .sheet(isPresented: $showRegistrationSheet) {
+            registerFaceView
         }
     }
     
-    func detectFaces(from image: UIImage?) {
-        guard let cgImage = image?.cgImage else { return }
+    private var registerFaceView: some View {
+        VStack(spacing: 20) {
+            Text("Register New Face")
+                .font(.title)
+                .fontWeight(.bold)
+            
+            TextField("Student ID", text: $newStudentID)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding(.horizontal)
+            
+            Button("Capture Face") {
+                showRegistrationSheet = false
+                isCameraPresented = true
+                FaceRecognitionManager.shared.isRegistrationMode = true
+                FaceRecognitionManager.shared.pendingStudentID = newStudentID
+            }
+            .padding()
+            .background(Color.blue)
+            .foregroundColor(.white)
+            .cornerRadius(12)
+            .disabled(newStudentID.isEmpty)
+            
+            Button("Cancel") {
+                showRegistrationSheet = false
+            }
+            .padding()
+        }
+        .padding()
+    }
+    
+    private func loadRegisteredFaces() {
+        registeredFaces = FaceRecognitionManager.shared.getRegisteredFaces()
+    }
+    
+    private func recognizeFace() {
+        guard let image = capturedImage else { return }
+        
+        // Check if we're in registration mode
+        if FaceRecognitionManager.shared.isRegistrationMode,
+           let studentID = FaceRecognitionManager.shared.pendingStudentID {
+            isProcessing = true
+            
+            // Register the face
+            FaceRecognitionManager.shared.registerFace(studentID: studentID, image: image)
+            
+            // Save the image to local storage
+            if let url = FaceStorageManager.shared.saveImageToLocal(image, studentID: studentID) {
+                print("Image saved to: \(url)")
+            }
+            
+            // Reset registration mode
+            FaceRecognitionManager.shared.isRegistrationMode = false
+            FaceRecognitionManager.shared.pendingStudentID = nil
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                detectedStudentID = "Face Registered: \(studentID)"
+                isProcessing = false
+                loadRegisteredFaces()
+            }
+            return
+        }
+        
+        // Normal recognition flow
+        isProcessing = true
+        
+        guard let ciImage = CIImage(image: image) else {
+            DispatchQueue.main.async {
+                detectedStudentID = "Invalid Image Format"
+                isProcessing = false
+            }
+            return
+        }
+        
         let request = VNDetectFaceRectanglesRequest { request, error in
-            if let error = error {
-                faceDetected = "Error detecting face: \(error.localizedDescription)"
-            } else if let results = request.results as? [VNFaceObservation], !results.isEmpty {
-                faceDetected = "Face Detected!"
-            } else {
-                faceDetected = "No Face Detected!"
+            guard let results = request.results as? [VNFaceObservation], !results.isEmpty else {
+                DispatchQueue.main.async {
+                    detectedStudentID = "No Face Detected"
+                    isProcessing = false
+                }
+                return
+            }
+            
+            // Face detected, now try recognition with error handling and timeout
+            let recognitionTask = DispatchWorkItem {
+                FaceRecognitionManager.shared.matchFace(image: image) { studentID in
+                    DispatchQueue.main.async {
+                        if let studentID = studentID {
+                            detectedStudentID = "Recognized: \(studentID)"
+                        } else {
+                            detectedStudentID = "Face Not Recognized"
+                        }
+                        isProcessing = false
+                    }
+                }
+            }
+            
+            // Execute the task with a timeout
+            DispatchQueue.global(qos: .userInitiated).async {
+                recognitionTask.perform()
+            }
+            
+            // Set a timeout of 5 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                if isProcessing {
+                    recognitionTask.cancel()
+                    detectedStudentID = "Recognition Timed Out"
+                    isProcessing = false
+                }
             }
         }
         
-        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-        try? handler.perform([request])
-    }
-}
-
-struct ImagePicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?
-    var onImagePicked: (UIImage?) -> Void
-    
-    class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
-        var parent: ImagePicker
-        
-        init(parent: ImagePicker) {
-            self.parent = parent
-        }
-        
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-            if let selectedImage = info[.originalImage] as? UIImage {
-                parent.image = selectedImage
-                parent.onImagePicked(selectedImage)
+        let handler = VNImageRequestHandler(ciImage: ciImage, options: [:])
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                try handler.perform([request])
+            } catch {
+                DispatchQueue.main.async {
+                    detectedStudentID = "Face Detection Error"
+                    isProcessing = false
+                }
+                print("❌ Face detection error: \(error.localizedDescription)")
             }
-            picker.dismiss(animated: true)
         }
     }
-    
-    func makeCoordinator() -> Coordinator {
-        return Coordinator(parent: self)
-    }
-    
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.delegate = context.coordinator
-        picker.sourceType = .camera
-        return picker
-    }
-    
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
 }
 
+// MARK: - Preview
 struct FaceDetectionScreen_Previews: PreviewProvider {
     static var previews: some View {
         FaceDetectionScreen()

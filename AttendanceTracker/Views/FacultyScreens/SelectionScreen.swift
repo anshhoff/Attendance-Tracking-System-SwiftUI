@@ -4,16 +4,13 @@
 //
 //  Created by Ansh Hardaha on 2025/02/22.
 //
+
 import SwiftUI
 
 struct SelectionScreen: View {
     @State private var selectedBranch: String = ""
     @State private var selectedBatch: String = ""
     @State private var selectedCourse: String = ""
-    
-    @State private var isBranchExpanded = false
-    @State private var isBatchExpanded = false
-    @State private var isCourseExpanded = false
     
     let branchList: [String]
     let batchList: [String]
@@ -78,10 +75,8 @@ struct SelectionScreen: View {
                 
                 Spacer()
                 
-                // Capture Button
-                Button(action: {
-                    // Navigate to Face Detection Screen
-                }) {
+                // Navigation to Face Detection Screen
+                NavigationLink(destination: FaceDetectionScreen()) {
                     Text("Capture")
                         .font(.title3)
                         .padding()
