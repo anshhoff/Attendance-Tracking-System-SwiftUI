@@ -73,12 +73,20 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
                 // This is where you'd match against student database
                 let confidence: Float = results[0].confidence
                 
-                // Mock recognition - in a real app, implement actual facial recognition
-                let mockRecognizedName = confidence > 0.7 ? "John Doe" : nil
+                // Get the face bounding box
+                let faceObservation = results[0]
+                let faceBounds = faceObservation.boundingBox
                 
-                DispatchQueue.main.async {
-                    if let lastImage = self.lastCapturedImage {
-                        self.onFaceDetected?(lastImage, confidence, mockRecognizedName)
+                // Convert to UIImage for display
+                guard let uiImage = self.lastCapturedImage else { return }
+                
+                // Crop face from image
+                let faceImage = self.cropFace(from: uiImage, faceRect: faceBounds)
+                
+                // Perform recognition
+                FaceRecognitionManager.shared.matchFace(image: faceImage) { studentID in
+                    DispatchQueue.main.async {
+                        self.onFaceDetected?(uiImage, confidence, studentID)
                     }
                 }
             } else {
@@ -180,5 +188,19 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
         } catch {
             print("Error performing face detection: \(error)")
         }
+    }
+    
+    private func cropFace(from image: UIImage, faceRect: CGRect) -> UIImage {
+        let imageSize = image.size
+        let x = faceRect.origin.x * imageSize.width
+        let y = faceRect.origin.y * imageSize.height
+        let width = faceRect.width * imageSize.width
+        let height = faceRect.height * imageSize.height
+        let faceRectInImage = CGRect(x: x, y: y, width: width, height: height)
+        
+        guard let cgImage = image.cgImage?.cropping(to: faceRectInImage) else {
+            return image
+        }
+        return UIImage(cgImage: cgImage)
     }
 }

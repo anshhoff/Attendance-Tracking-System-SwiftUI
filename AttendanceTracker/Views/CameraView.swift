@@ -16,8 +16,12 @@ struct CameraView: View {
     var body: some View {
         ZStack {
             CameraPreview(session: cameraManager.session)
-                .onAppear { cameraManager.startSession() }
-                .onDisappear { cameraManager.stopSession() }
+                .onAppear {
+                    cameraManager.startSession()
+                }
+                .onDisappear {
+                    cameraManager.stopSession()
+                }
                 .overlay(
                     Rectangle()
                         .strokeBorder(Color.yellow, lineWidth: 3)
@@ -139,8 +143,10 @@ struct CameraView: View {
                     DispatchQueue.main.async {
                         if let studentID = studentID {
                             self.recognizedStudent = studentID
+                            print("✅ Match found: \(studentID)")
                         } else {
                             self.recognizedStudent = nil
+                            print("❌ No match found")
                         }
                     }
                 }

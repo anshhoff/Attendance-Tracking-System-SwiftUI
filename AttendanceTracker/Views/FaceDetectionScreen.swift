@@ -173,68 +173,19 @@ struct FaceDetectionScreen: View {
         // Normal recognition flow
         isProcessing = true
         
-        guard let ciImage = CIImage(image: image) else {
+        FaceRecognitionManager.shared.matchFace(image: image) { studentID in
             DispatchQueue.main.async {
-                detectedStudentID = "Invalid Image Format"
-                isProcessing = false
-            }
-            return
-        }
-        
-        let request = VNDetectFaceRectanglesRequest { request, error in
-            guard let results = request.results as? [VNFaceObservation], !results.isEmpty else {
-                DispatchQueue.main.async {
-                    detectedStudentID = "No Face Detected"
-                    isProcessing = false
+                if let studentID = studentID {
+                    self.detectedStudentID = "Recognized: \(studentID)"
+                } else {
+                    self.detectedStudentID = "Face Not Recognized"
                 }
-                return
-            }
-            
-            // Face detected, now try recognition with error handling and timeout
-            let recognitionTask = DispatchWorkItem {
-                FaceRecognitionManager.shared.matchFace(image: image) { studentID in
-                    DispatchQueue.main.async {
-                        if let studentID = studentID {
-                            detectedStudentID = "Recognized: \(studentID)"
-                        } else {
-                            detectedStudentID = "Face Not Recognized"
-                        }
-                        isProcessing = false
-                    }
-                }
-            }
-            
-            // Execute the task with a timeout
-            DispatchQueue.global(qos: .userInitiated).async {
-                recognitionTask.perform()
-            }
-            
-            // Set a timeout of 5 seconds
-            DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
-                if isProcessing {
-                    recognitionTask.cancel()
-                    detectedStudentID = "Recognition Timed Out"
-                    isProcessing = false
-                }
-            }
-        }
-        
-        let handler = VNImageRequestHandler(ciImage: ciImage, options: [:])
-        DispatchQueue.global(qos: .userInitiated).async {
-            do {
-                try handler.perform([request])
-            } catch {
-                DispatchQueue.main.async {
-                    detectedStudentID = "Face Detection Error"
-                    isProcessing = false
-                }
-                print("❌ Face detection error: \(error.localizedDescription)")
+                self.isProcessing = false
             }
         }
     }
 }
 
-// MARK: - Preview
 struct FaceDetectionScreen_Previews: PreviewProvider {
     static var previews: some View {
         FaceDetectionScreen()
