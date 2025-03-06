@@ -47,20 +47,15 @@ struct FaceCameraView: UIViewControllerRepresentable {
         
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front),
               let input = try? AVCaptureDeviceInput(device: device) else {
-            print("❌ Error: Could not create AVCaptureDeviceInput")
+            print("Camera setup failed")
             return
         }
         
-        if session.canAddInput(input) {
-            session.addInput(input)
-        }
+        if session.canAddInput(input) { session.addInput(input) }
         
         let output = AVCaptureVideoDataOutput()
         output.setSampleBufferDelegate(context.coordinator, queue: DispatchQueue(label: "videoQueue"))
-        
-        if session.canAddOutput(output) {
-            session.addOutput(output)
-        }
+        if session.canAddOutput(output) { session.addOutput(output) }
         
         session.commitConfiguration()
         session.startRunning()
@@ -69,20 +64,25 @@ struct FaceCameraView: UIViewControllerRepresentable {
     private func processFrame(_ imageBuffer: CVPixelBuffer) {
         let ciImage = CIImage(cvPixelBuffer: imageBuffer)
         let context = CIContext()
-
+        
         guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
         let uiImage = UIImage(cgImage: cgImage)
-
-        FaceRecognitionManager.shared.matchFace(image: uiImage) { studentID in
-            if let studentID = studentID {
-                print("✅ Recognized student: \(studentID)")
-            } else {
-                print("❌ Face not recognized")
+        
+        FaceRecognitionManager.shared.matchFace(image: uiImage) { studentID, similarity in
+            DispatchQueue.main.async {
+                if let studentID = studentID {
+                    print("✅ Recognized student: \(studentID) with similarity \(similarity)")
+                } else {
+                    print("❌ Face not recognized")
+                }
             }
         }
     }
 }
 
-#Preview {
-    FaceCameraView()
+// Preview
+struct FaceCameraView_Previews: PreviewProvider {
+    static var previews: some View {
+        FaceCameraView()
+    }
 }

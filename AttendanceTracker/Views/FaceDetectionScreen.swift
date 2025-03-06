@@ -173,7 +173,7 @@ struct FaceDetectionScreen: View {
         // Normal recognition flow
         isProcessing = true
         
-        FaceRecognitionManager.shared.matchFace(image: image) { studentID in
+        FaceRecognitionManager.shared.matchFace(image: image) { studentID, similarity in
             DispatchQueue.main.async {
                 if let studentID = studentID {
                     self.detectedStudentID = "Recognized: \(studentID)"

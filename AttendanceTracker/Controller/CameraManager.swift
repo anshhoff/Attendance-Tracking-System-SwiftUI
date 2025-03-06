@@ -84,7 +84,7 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
                 let faceImage = self.cropFace(from: uiImage, faceRect: faceBounds)
                 
                 // Perform recognition
-                FaceRecognitionManager.shared.matchFace(image: faceImage) { studentID in
+                FaceRecognitionManager.shared.matchFace(image: faceImage) { studentID, similarity in
                     DispatchQueue.main.async {
                         self.onFaceDetected?(uiImage, confidence, studentID)
                     }

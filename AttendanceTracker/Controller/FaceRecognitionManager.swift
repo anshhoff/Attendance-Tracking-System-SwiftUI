@@ -5,7 +5,7 @@ class FaceRecognitionManager {
     static let shared = FaceRecognitionManager()
     private var registeredFaces: [String: (image: UIImage, faceRect: CGRect)] = [:]
     private let facesStorageKey = "registeredStudentFaces"
-    private let recognitionThreshold: Float = 0.65 // Configurable threshold
+    private let recognitionThreshold: Float = 0.55 // Configurable threshold
     var isRegistrationMode = false
     var pendingStudentID: String? = nil
     
@@ -44,21 +44,20 @@ class FaceRecognitionManager {
         saveFacesToStorage()
     }
     
-    func matchFace(image: UIImage, completion: @escaping (String?) -> Void) {
+    func matchFace(image: UIImage, completion: @escaping (String?, Float) -> Void) {
         guard let ciImage = CIImage(image: image) else {
-            completion(nil)
+            completion(nil, 0.0)
             return
         }
         
         let request = VNDetectFaceRectanglesRequest { request, error in
-            guard let results = request.results as? [VNFaceObservation],
-                  let face = results.first else {
-                completion(nil)
+            guard let results = request.results as? [VNFaceObservation], !results.isEmpty else {
+                print("❌ No faces detected in the input image")
+                completion(nil, 0.0)
                 return
             }
             
-            let inputFaceImage = self.cropFace(from: image, faceRect: face.boundingBox)
-            
+            let inputFaceImage = self.cropFace(from: image, faceRect: results[0].boundingBox)
             var bestMatch: (studentID: String, similarity: Float) = ("", 0)
             
             for (studentID, data) in self.registeredFaces {
@@ -70,10 +69,12 @@ class FaceRecognitionManager {
                 }
             }
             
-            if bestMatch.similarity > self.recognitionThreshold {
-                completion(bestMatch.studentID)
+            if bestMatch.similarity > 0.55 {
+                print("✅ Match found: \(bestMatch.studentID) with similarity \(bestMatch.similarity)")
+                completion(bestMatch.studentID, bestMatch.similarity)
             } else {
-                completion(nil)
+                print("❌ No match found. Best match was \(bestMatch.studentID) with similarity \(bestMatch.similarity)")
+                completion(nil, bestMatch.similarity)
             }
         }
         
@@ -82,7 +83,7 @@ class FaceRecognitionManager {
             do {
                 try handler.perform([request])
             } catch {
-                completion(nil)
+                completion(nil, 0.0)
             }
         }
     }

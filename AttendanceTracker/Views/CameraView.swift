@@ -9,10 +9,11 @@ struct CameraView: View {
     @State private var detectionConfidence: Float = 0.0
     @State private var showCaptureButton = true
     @State private var flashMode: Bool = false
+    //@State private var detectionConfidence: Float = 0.0
     
     var onImageCaptured: (UIImage) -> Void  // Closure to send image back
     var isRegistrationMode: Bool = false  // Flag to check if in registration mode
-
+    
     var body: some View {
         ZStack {
             CameraPreview(session: cameraManager.session)
@@ -28,7 +29,7 @@ struct CameraView: View {
                         .frame(width: 250, height: 300)
                         .background(Color.clear)
                 )
-
+            
             VStack {
                 HStack {
                     Button(action: {
@@ -65,12 +66,15 @@ struct CameraView: View {
                         .font(.largeTitle)
                         .bold()
                         .foregroundColor(.green)
+                    Text(String(format: "Confidence: %.2f%%", detectionConfidence * 100))
+                        .font(.title2)
+                        .foregroundColor(.white)
                 } else {
                     Text("Position your face in the frame")
                         .font(.title)
                         .foregroundColor(.white)
                 }
-
+                
                 HStack(spacing: 30) {
                     Button(action: { presentationMode.wrappedValue.dismiss() }) {
                         Image(systemName: "xmark")
@@ -139,14 +143,16 @@ struct CameraView: View {
             }
             
             let recognitionTask = DispatchWorkItem {
-                FaceRecognitionManager.shared.matchFace(image: image) { studentID in
+                FaceRecognitionManager.shared.matchFace(image: image) { studentID, similarity in
                     DispatchQueue.main.async {
                         if let studentID = studentID {
                             self.recognizedStudent = studentID
-                            print("✅ Match found: \(studentID)")
+                            self.detectionConfidence = similarity
+                            print("✅ Match found: \(studentID) with similarity \(similarity)")
                         } else {
                             self.recognizedStudent = nil
-                            print("❌ No match found")
+                            self.detectionConfidence = similarity
+                            print("❌ No match found with similarity \(similarity)")
                         }
                     }
                 }
@@ -166,20 +172,20 @@ struct CameraView: View {
             }
         }
     }
-}
-
-// Camera Preview Layer
-struct CameraPreview: UIViewRepresentable {
-    let session: AVCaptureSession
-
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView(frame: UIScreen.main.bounds)
-        let layer = AVCaptureVideoPreviewLayer(session: session)
-        layer.videoGravity = .resizeAspectFill
-        layer.frame = view.frame
-        view.layer.addSublayer(layer)
-        return view
+    
+    // Camera Preview Layer
+    struct CameraPreview: UIViewRepresentable {
+        let session: AVCaptureSession
+        
+        func makeUIView(context: Context) -> UIView {
+            let view = UIView(frame: UIScreen.main.bounds)
+            let layer = AVCaptureVideoPreviewLayer(session: session)
+            layer.videoGravity = .resizeAspectFill
+            layer.frame = view.frame
+            view.layer.addSublayer(layer)
+            return view
+        }
+        
+        func updateUIView(_ uiView: UIView, context: Context) {}
     }
-
-    func updateUIView(_ uiView: UIView, context: Context) {}
 }
