@@ -52,7 +52,7 @@ class FaceRecognitionManager {
         
         let request = VNDetectFaceRectanglesRequest { request, error in
             guard let results = request.results as? [VNFaceObservation], !results.isEmpty else {
-                print("❌ No faces detected in the input image")
+                //print("❌ No faces detected in the input image")
                 completion(nil, 0.0)
                 return
             }

@@ -1,17 +1,13 @@
-//
-//  LoginScreen.swift
-//  AttendanceTracker
-//
-//  Created by Ansh Hardaha on 2025/02/22.
-//
-
 import SwiftUI
+import FirebaseAuth
+import FirebaseFirestore
 
 struct LoginScreen: View {
-    @State private var email: String = ""
-    @State private var password: String = ""
-    @State private var role: String = "Student"
+    @State private var email: String = "faculty@gmail.com"
+    @State private var password: String = "123456"
     @State private var showPassword: Bool = false
+    @State private var showAlert = false
+    @State private var alertMessage = ""
     @State private var navigateToStudentHome = false
     @State private var navigateToFacultyHome = false
     @State private var navigateToSignUp = false
@@ -56,24 +52,10 @@ struct LoginScreen: View {
                         }
                     }
                     .padding(.horizontal, 16)
-                    
-                    // Role Selection
-                    Picker("Select Role", selection: $role) {
-                        Text("Student").tag("Student")
-                        Text("Faculty").tag("Faculty")
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                    .padding(.horizontal, 16)
                 }
                 
                 // Login Button
-                Button(action: {
-                    if role == "Student" {
-                        navigateToStudentHome = true
-                    } else {
-                        navigateToFacultyHome = true
-                    }
-                }) {
+                Button(action: handleLogin) {
                     Text("Login")
                         .padding()
                         .frame(maxWidth: .infinity)
@@ -83,10 +65,9 @@ struct LoginScreen: View {
                 }
                 .padding(.horizontal, 50)
                 .padding(.top, 32)
-                
-                // Navigation Links
-                NavigationLink(destination: StudentHomeScreen(), isActive: $navigateToStudentHome) { EmptyView() }
-                NavigationLink(destination: FacultyHomeScreen(), isActive: $navigateToFacultyHome) { EmptyView() }
+                .alert(isPresented: $showAlert) {
+                    Alert(title: Text("Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+                }
                 
                 // Sign Up Link
                 Button(action: { navigateToSignUp = true }) {
@@ -96,9 +77,53 @@ struct LoginScreen: View {
                 .padding(.top, 16)
                 
                 NavigationLink(destination: SignUpScreen(), isActive: $navigateToSignUp) { EmptyView() }
+                
+                // Navigation Links
+                NavigationLink(destination: StudentHomeScreen(), isActive: $navigateToStudentHome) { EmptyView() }
+                NavigationLink(destination: FacultyHomeScreen(), isActive: $navigateToFacultyHome) { EmptyView() }
             }
             .padding()
         }
+    }
+    
+    private func handleLogin() {
+        guard !email.isEmpty, !password.isEmpty else {
+            alertMessage = "Please fill in all fields"
+            showAlert = true
+            return
+        }
+        
+        Auth.auth().signIn(withEmail: email, password: password) { result, error in
+            if let error = error {
+                alertMessage = error.localizedDescription
+                showAlert = true
+                return
+            }
+            
+            guard let user = result?.user else { return }
+            
+            self.fetchUserRole(user)
+        }
+    }
+    
+    private func fetchUserRole(_ user: User) {
+        Firestore.firestore().collection("users")
+            .document(user.uid)
+            .getDocument { document, error in
+                if let document = document, document.exists {
+                    let role = document.get("role") as? String ?? "Student"
+                    DispatchQueue.main.async {
+                        if role == "Student" {
+                            self.navigateToStudentHome = true
+                        } else {
+                            self.navigateToFacultyHome = true
+                        }
+                    }
+                } else {
+                    alertMessage = "User role not found"
+                    showAlert = true
+                }
+            }
     }
 }
 

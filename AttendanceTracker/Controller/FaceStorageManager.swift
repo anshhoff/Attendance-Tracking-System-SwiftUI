@@ -1,56 +1,55 @@
-//
-//  FaceStorageManager.swift
-//  AttendanceTracker
-//
-//  Created by Ansh Hardaha on 2025/02/23.
-//
-
-import SwiftUI
+import Foundation
+import UIKit
 
 class FaceStorageManager {
-    static let shared = FaceStorageManager() // Singleton instance
+    static let shared = FaceStorageManager()
+    private let documentsDirectory: URL
     
-    private init() {} // Private constructor to prevent multiple instances
+    init() {
+        documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    }
     
-    // Function to save image as PNG
+    var facesStorageURL: URL {
+        documentsDirectory.appendingPathComponent("registered_faces.json")
+    }
+    
     func saveImageToLocal(_ image: UIImage, studentID: String) -> URL? {
-        if let data = image.pngData() { // Save as PNG
-            let filename = getDocumentsDirectory().appendingPathComponent("\(studentID).png")
-            try? data.write(to: filename)
-            return filename
+        let fileName = "\(studentID)_\(UUID().uuidString).jpg" // Changed to .jpg
+        let fileURL = documentsDirectory.appendingPathComponent(fileName)
+        
+        // Compress image using JPEG with 70% quality
+        guard let data = image.jpegData(compressionQuality: 0.7) else {
+            print("Error converting image to JPEG data")
+            return nil
         }
-        return nil
-    }
-
-    // Function to load image from local storage
-    func loadImageFromLocal(studentID: String) -> UIImage? {
-        let fileURL = getDocumentsDirectory().appendingPathComponent("\(studentID).png")
-        return UIImage(contentsOfFile: fileURL.path)
-    }
-
-    // Get documents directory path
-    private func getDocumentsDirectory() -> URL {
-        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-    }
-
-    // Load all registered faces from local storage
-    func getRegisteredFaces() -> [String: UIImage] {
-        var faces: [String: UIImage] = [:]
-        let fileManager = FileManager.default
-        let documentsURL = getDocumentsDirectory()
         
         do {
-            let fileURLs = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
-            for fileURL in fileURLs where fileURL.pathExtension == "png" {
-                let studentID = fileURL.deletingPathExtension().lastPathComponent
-                if let image = UIImage(contentsOfFile: fileURL.path) {
-                    faces[studentID] = image
+            try data.write(to: fileURL)
+            print("Saved face image to: \(fileURL.path)")
+            return fileURL
+        } catch {
+            print("Error saving face image: \(error.localizedDescription)")
+            return nil
+        }
+    }
+    
+    func getRegisteredImages(for studentID: String) -> [UIImage] {
+        let directory = documentsDirectory
+        
+        do {
+            let contents = try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
+            let faceImages = contents.filter { $0.lastPathComponent.hasPrefix("\(studentID)_") }
+            
+            var images = [UIImage]()
+            for imageURL in faceImages {
+                if let image = UIImage(contentsOfFile: imageURL.path) {
+                    images.append(image)
                 }
             }
+            return images
         } catch {
-            print("Error loading faces: \(error)")
+            print("Error retrieving face images: \(error.localizedDescription)")
+            return []
         }
-        
-        return faces
     }
 }

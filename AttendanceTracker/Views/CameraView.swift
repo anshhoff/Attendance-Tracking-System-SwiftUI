@@ -152,7 +152,7 @@ struct CameraView: View {
                         } else {
                             self.recognizedStudent = nil
                             self.detectionConfidence = similarity
-                            print("❌ No match found with similarity \(similarity)")
+                            //print("❌ No match found with similarity \(similarity)")
                         }
                     }
                 }

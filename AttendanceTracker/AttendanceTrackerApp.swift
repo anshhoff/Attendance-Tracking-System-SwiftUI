@@ -6,12 +6,19 @@
 //
 
 import SwiftUI
+import Firebase
 
 @main
 struct AttendanceTrackerApp: App {
+    // Initialize Firebase in the init() method
+    init() {
+        FirebaseApp.configure()
+    }
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
         }
     }
 }
+

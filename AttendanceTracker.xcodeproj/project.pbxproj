@@ -6,8 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		07C1329499E37CC8ACF130CF /* Pods_AttendanceTracker.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA3BA40B02BE9E9F2B6724FB /* Pods_AttendanceTracker.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
+		4265F262527C5A04099B81C7 /* Pods-AttendanceTracker.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AttendanceTracker.debug.xcconfig"; path = "Target Support Files/Pods-AttendanceTracker/Pods-AttendanceTracker.debug.xcconfig"; sourceTree = "<group>"; };
+		62E94F6D8588DCD8C01A8754 /* Pods-AttendanceTracker.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AttendanceTracker.release.xcconfig"; path = "Target Support Files/Pods-AttendanceTracker/Pods-AttendanceTracker.release.xcconfig"; sourceTree = "<group>"; };
 		A6990E512D65B8B8001F834B /* AttendanceTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AttendanceTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FA3BA40B02BE9E9F2B6724FB /* Pods_AttendanceTracker.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AttendanceTracker.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -36,17 +43,28 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				07C1329499E37CC8ACF130CF /* Pods_AttendanceTracker.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		6880167D6493F288688CB1C4 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				FA3BA40B02BE9E9F2B6724FB /* Pods_AttendanceTracker.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		A6990E482D65B8B7001F834B = {
 			isa = PBXGroup;
 			children = (
 				A6990E532D65B8B8001F834B /* AttendanceTracker */,
 				A6990E522D65B8B8001F834B /* Products */,
+				FA88EF9F6DA6AC1064429606 /* Pods */,
+				6880167D6493F288688CB1C4 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -58,6 +76,15 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		FA88EF9F6DA6AC1064429606 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				4265F262527C5A04099B81C7 /* Pods-AttendanceTracker.debug.xcconfig */,
+				62E94F6D8588DCD8C01A8754 /* Pods-AttendanceTracker.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -65,9 +92,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = A6990E5F2D65B8BA001F834B /* Build configuration list for PBXNativeTarget "AttendanceTracker" */;
 			buildPhases = (
+				BF9F8A22C635C7DB50F5D24D /* [CP] Check Pods Manifest.lock */,
 				A6990E4D2D65B8B8001F834B /* Sources */,
 				A6990E4E2D65B8B8001F834B /* Frameworks */,
 				A6990E4F2D65B8B8001F834B /* Resources */,
+				34557C4753ADD2F21A6ED3CB /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -77,8 +106,6 @@
 				A6990E532D65B8B8001F834B /* AttendanceTracker */,
 			);
 			name = AttendanceTracker;
-			packageProductDependencies = (
-			);
 			productName = AttendanceTracker;
 			productReference = A6990E512D65B8B8001F834B /* AttendanceTracker.app */;
 			productType = "com.apple.product-type.application";
@@ -126,6 +153,48 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		34557C4753ADD2F21A6ED3CB /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-AttendanceTracker/Pods-AttendanceTracker-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-AttendanceTracker/Pods-AttendanceTracker-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-AttendanceTracker/Pods-AttendanceTracker-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		BF9F8A22C635C7DB50F5D24D /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-AttendanceTracker-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A6990E4D2D65B8B8001F834B /* Sources */ = {
@@ -259,6 +328,7 @@
 		};
 		A6990E602D65B8BA001F834B /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4265F262527C5A04099B81C7 /* Pods-AttendanceTracker.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -267,6 +337,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"AttendanceTracker/Preview Content\"";
 				DEVELOPMENT_TEAM = P4822XB343;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AttendanceTracker/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to the camera to capture student images for attendance tracking.";
@@ -296,6 +367,7 @@
 		};
 		A6990E612D65B8BA001F834B /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 62E94F6D8588DCD8C01A8754 /* Pods-AttendanceTracker.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -304,6 +376,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"AttendanceTracker/Preview Content\"";
 				DEVELOPMENT_TEAM = P4822XB343;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AttendanceTracker/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to the camera to capture student images for attendance tracking.";
