@@ -5,8 +5,16 @@ struct StudentAttendance: Identifiable {
     let id: String
     let name: String
     let timestamp: Date
+    let entryID: UUID // Unique identifier for each attendance entry
     
-    var identifiableId: String { id } // This makes it conform to Identifiable
+    var identifiableId: UUID { entryID } // Use UUID for identification
+    
+    init(id: String, name: String, timestamp: Date) {
+        self.id = id
+        self.name = name
+        self.timestamp = timestamp
+        self.entryID = UUID() // Generate a unique ID on initialization
+    }
 }
 
 class AttendanceManager: ObservableObject {
@@ -31,8 +39,8 @@ class AttendanceManager: ObservableObject {
         presentStudents.append(newAttendance)
     }
     
-    func removeStudent(id: String) {
-        presentStudents = presentStudents.filter { $0.id != id }
+    func removeStudent(entryID: UUID) {
+        presentStudents = presentStudents.filter { $0.entryID != entryID }
     }
     
     private func saveAttendanceData() {
@@ -53,14 +61,14 @@ struct AttendanceListView: View {
                                 .font(.headline)
                             Text("ID: \(student.id)")
                                 .font(.subheadline)
-                            Text(student.timestamp, style: .date)
+                            Text(student.timestamp.formatted(date: .abbreviated, time: .standard))
                                 .font(.caption)
                         }
                         
                         Spacer()
                         
                         Button(action: {
-                            attendanceManager.removeStudent(id: student.id)
+                            attendanceManager.removeStudent(entryID: student.entryID)
                         }) {
                             Image(systemName: "trash")
                                 .foregroundColor(.red)
