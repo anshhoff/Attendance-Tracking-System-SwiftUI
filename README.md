@@ -1,7 +1,5 @@
 # Attendance-Tracking-System-SwiftUI
 
-# Attendance Tracking System SwiftUI
-
 ## Table of Contents
 - [About](#about)
 - [Features](#features)
