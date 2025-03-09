@@ -1,15 +1,20 @@
+// FaceDetectionScreen.swift
 import SwiftUI
 import Vision
 import UIKit
 
 struct FaceDetectionScreen: View {
     @State private var detectedStudentID: String? = nil
+    @State private var detectedStudentName: String? = nil
     @State private var isCameraPresented = false
     @State private var capturedImage: UIImage?
     @State private var isProcessing = false
     @State private var registeredFaces: [String] = []
     @State private var showRegistrationSheet = false
     @State private var newStudentID = ""
+    @State private var newStudentName = "" // Add this line
+    
+    @StateObject private var attendanceManager = AttendanceManager.shared
     
     var body: some View {
         VStack(spacing: 16) {
@@ -21,8 +26,8 @@ struct FaceDetectionScreen: View {
                 ProgressView("Processing...")
                     .padding()
             } else {
-                if let studentID = detectedStudentID {
-                    Text(studentID)
+                if let studentID = detectedStudentID, let studentName = detectedStudentName {
+                    Text("\(studentName) (\(studentID))")
                         .font(.title2)
                         .foregroundColor(studentID.contains("Not") ? .red : .green)
                         .padding()
@@ -118,17 +123,22 @@ struct FaceDetectionScreen: View {
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding(.horizontal)
             
+            TextField("Student Name", text: $newStudentName) // Add this TextField
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding(.horizontal)
+            
             Button("Capture Face") {
                 showRegistrationSheet = false
                 isCameraPresented = true
                 FaceRecognitionManager.shared.isRegistrationMode = true
                 FaceRecognitionManager.shared.pendingStudentID = newStudentID
+                FaceRecognitionManager.shared.pendingStudentName = newStudentName // Add this line
             }
             .padding()
             .background(Color.blue)
             .foregroundColor(.white)
             .cornerRadius(12)
-            .disabled(newStudentID.isEmpty)
+            .disabled(newStudentID.isEmpty || newStudentName.isEmpty) // Update this line
             
             Button("Cancel") {
                 showRegistrationSheet = false
@@ -147,11 +157,12 @@ struct FaceDetectionScreen: View {
         
         // Check if we're in registration mode
         if FaceRecognitionManager.shared.isRegistrationMode,
-           let studentID = FaceRecognitionManager.shared.pendingStudentID {
+           let studentID = FaceRecognitionManager.shared.pendingStudentID,
+           let studentName = FaceRecognitionManager.shared.pendingStudentName { // Add this line
             isProcessing = true
             
             // Register the face
-            FaceRecognitionManager.shared.registerFace(studentID: studentID, image: image)
+            FaceRecognitionManager.shared.registerFace(studentID: studentID, name: studentName, image: image) // Update this line
             
             // Save the image to local storage
             if let url = FaceStorageManager.shared.saveImageToLocal(image, studentID: studentID) {
@@ -161,9 +172,11 @@ struct FaceDetectionScreen: View {
             // Reset registration mode
             FaceRecognitionManager.shared.isRegistrationMode = false
             FaceRecognitionManager.shared.pendingStudentID = nil
+            FaceRecognitionManager.shared.pendingStudentName = nil // Add this line
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                detectedStudentID = "Face Registered: \(studentID)"
+                detectedStudentID = studentID
+                detectedStudentName = studentName // Add this line
                 isProcessing = false
                 loadRegisteredFaces()
             }
@@ -173,12 +186,15 @@ struct FaceDetectionScreen: View {
         // Normal recognition flow
         isProcessing = true
         
-        FaceRecognitionManager.shared.matchFace(image: image) { studentID, similarity in
+        FaceRecognitionManager.shared.matchFace(image: image) { studentID, studentName, similarity in // Update this line
             DispatchQueue.main.async {
-                if let studentID = studentID {
-                    self.detectedStudentID = "Recognized: \(studentID)"
+                if let studentID = studentID, let studentName = studentName {
+                    self.detectedStudentID = studentID
+                    self.detectedStudentName = studentName
+                    attendanceManager.recordAttendance(studentID: studentID, studentName: studentName) // Update this line
                 } else {
                     self.detectedStudentID = "Face Not Recognized"
+                    self.detectedStudentName = nil
                 }
                 self.isProcessing = false
             }

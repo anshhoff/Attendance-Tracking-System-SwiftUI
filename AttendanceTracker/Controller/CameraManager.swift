@@ -61,43 +61,43 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
     }
     
     func setupFaceDetection() {
-        faceDetectionRequest = VNDetectFaceRectanglesRequest { [weak self] request, error in
-            guard let self = self else { return }
-            if let error = error {
-                print("Face detection error: \(error)")
-                return
-            }
-            
-            if let results = request.results as? [VNFaceObservation], !results.isEmpty {
-                // Face detected - would implement recognition here
-                // This is where you'd match against student database
-                let confidence: Float = results[0].confidence
-                
-                // Get the face bounding box
-                let faceObservation = results[0]
-                let faceBounds = faceObservation.boundingBox
-                
-                // Convert to UIImage for display
-                guard let uiImage = self.lastCapturedImage else { return }
-                
-                // Crop face from image
-                let faceImage = self.cropFace(from: uiImage, faceRect: faceBounds)
-                
-                // Perform recognition
-                FaceRecognitionManager.shared.matchFace(image: faceImage) { studentID, similarity in
-                    DispatchQueue.main.async {
-                        self.onFaceDetected?(uiImage, confidence, studentID)
-                    }
-                }
-            } else {
-                DispatchQueue.main.async {
-                    if let lastImage = self.lastCapturedImage {
-                        self.onFaceDetected?(lastImage, 0.0, nil)
-                    }
-                }
-            }
-        }
-    }
+           faceDetectionRequest = VNDetectFaceRectanglesRequest { [weak self] request, error in
+               guard let self = self else { return }
+               if let error = error {
+                   print("Face detection error: \(error)")
+                   return
+               }
+               
+               if let results = request.results as? [VNFaceObservation], !results.isEmpty {
+                   // Face detected - would implement recognition here
+                   // This is where you'd match against student database
+                   let confidence: Float = results[0].confidence
+                   
+                   // Get the face bounding box
+                   let faceObservation = results[0]
+                   let faceBounds = faceObservation.boundingBox
+                   
+                   // Convert to UIImage for display
+                   guard let uiImage = self.lastCapturedImage else { return }
+                   
+                   // Crop face from image
+                   let faceImage = self.cropFace(from: uiImage, faceRect: faceBounds)
+                   
+                   // Perform recognition
+                   FaceRecognitionManager.shared.matchFace(image: faceImage) { studentID, studentName, similarity in
+                       DispatchQueue.main.async {
+                           self.onFaceDetected?(uiImage, confidence, studentID)
+                       }
+                   }
+               } else {
+                   DispatchQueue.main.async {
+                       if let lastImage = self.lastCapturedImage {
+                           self.onFaceDetected?(lastImage, 0.0, nil)
+                       }
+                   }
+               }
+           }
+       }
     
     func startSession() {
         if !session.isRunning {

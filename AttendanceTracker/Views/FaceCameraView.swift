@@ -1,3 +1,4 @@
+// FaceCameraView.swift
 import SwiftUI
 import AVFoundation
 import Vision
@@ -68,10 +69,10 @@ struct FaceCameraView: UIViewControllerRepresentable {
         guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
         let uiImage = UIImage(cgImage: cgImage)
         
-        FaceRecognitionManager.shared.matchFace(image: uiImage) { studentID, similarity in
+        FaceRecognitionManager.shared.matchFace(image: uiImage) { studentID, studentName, similarity in
             DispatchQueue.main.async {
                 if let studentID = studentID {
-                    print("✅ Recognized student: \(studentID) with similarity \(similarity)")
+                    print("✅ Recognized student: \(studentID) (\(studentName ?? "Unknown")) with similarity \(similarity)")
                 } else {
                     print("❌ Face not recognized")
                 }

@@ -1,3 +1,4 @@
+// CameraView.swift
 import SwiftUI
 import AVFoundation
 import Vision
@@ -9,7 +10,6 @@ struct CameraView: View {
     @State private var detectionConfidence: Float = 0.0
     @State private var showCaptureButton = true
     @State private var flashMode: Bool = false
-    //@State private var detectionConfidence: Float = 0.0
     
     var onImageCaptured: (UIImage) -> Void  // Closure to send image back
     var isRegistrationMode: Bool = false  // Flag to check if in registration mode
@@ -143,12 +143,12 @@ struct CameraView: View {
             }
             
             let recognitionTask = DispatchWorkItem {
-                FaceRecognitionManager.shared.matchFace(image: image) { studentID, similarity in
+                FaceRecognitionManager.shared.matchFace(image: image) { studentID, studentName, similarity in
                     DispatchQueue.main.async {
                         if let studentID = studentID {
                             self.recognizedStudent = studentID
                             self.detectionConfidence = similarity
-                            print("✅ Match found: \(studentID) with similarity \(similarity)")
+                            print("✅ Match found: \(studentID) (\(studentName ?? "Unknown")) with similarity \(similarity)")
                         } else {
                             self.recognizedStudent = nil
                             self.detectionConfidence = similarity

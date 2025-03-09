@@ -1,5 +1,4 @@
-//
-//  FacultyHomeScreen.swift
+// FacultyHomeScreen.swift
 //  AttendanceTracker
 //
 //  Created by Ansh Hardaha on 2025/02/22.
@@ -11,10 +10,15 @@ struct FacultyHomeScreen: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 12) {
-                FacultyHomeCard(title: "View Attendance", icon: "table") {}
+                // NavigationLink for View Attendance
+                NavigationLink(destination: AttendanceListView()) {
+                    FacultyHomeCard(title: "View Attendance", icon: "table") {}
+                }
+                
                 FacultyHomeCard(title: "Manage Classes", icon: "list.bullet") {}
                 FacultyHomeCard(title: "Profile & Settings", icon: "person") {}
 
+                // NavigationLink for Take Attendance
                 NavigationLink(destination: SelectionScreen(
                     branchList: ["CSE", "ECE", "DSAI"],
                     batchList: ["2021", "2022", "2023"],
